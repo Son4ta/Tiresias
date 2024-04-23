@@ -46,13 +46,13 @@ def load_images(image_files, size=(0, 0)):
     for image_file in image_files:
         image = load_image(image_file)
         # default no resize
-        if size[0] is not 0:
+        if size[0] != 0:
             image = image.resize(size)
         out.append(image)
     return out
 
 
-def caption_image(image_file, query, conv_mode="llava_v1", max_new_tokens=512):
+def caption_image(image_file, query, conv_mode="llava_v1", max_new_tokens=512, size=(0, 0)):
     # 处理查询
     qs = query
     image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
@@ -72,7 +72,7 @@ def caption_image(image_file, query, conv_mode="llava_v1", max_new_tokens=512):
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt()
     # 加载 预处理 图像
-    images = load_images(image_file.split(","))
+    images = load_images(image_file.split(","), size)
     image_sizes = [x.size for x in images]
     print("图片尺寸:{}".format(image_sizes))
     image_tensor = image_processor(images, return_tensors='pt')['pixel_values'].cuda()
@@ -170,16 +170,16 @@ from translate import Translator
 import time
 
 query = 'what is this?short answer'
-images_file = f'images/llava_logo.png'
+images_file = f'images/bottom.jpg'
 audio_file = f'audio/whatisthis.mp3'
 
 # TODO:计时点
 SR_process_time = time.time()
-query = speech_recognition(audio_file, task="translate")  # + "Short answer"
+query = speech_recognition(audio_file, task="translate") + "Short answer"
 
 # TODO:计时点
 LLM_process_time = time.time()
-image, output = caption_image(images_file, query)
+image, output = caption_image(images_file, query, size=(128, 128))
 print(output)
 output_zh = Translator(from_lang="en", to_lang="zh").translate(output)
 
