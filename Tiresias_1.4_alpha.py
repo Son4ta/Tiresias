@@ -166,20 +166,49 @@ def str_preprocess(str1):
     return str1
 
 
+from paddleocr import PaddleOCR
+from PIL import Image
+
+
+def ocr(image_file, prompt="OCR result:"):
+    # OCR模型调用
+    paddle_ocr = PaddleOCR(det_model_dir="./model/PaddleOCR/ch_PP-OCRv4_det_infer/",
+                    cls_model_dir="./model/PaddleOCR/cls/",
+                    rec_model_dir="./model/PaddleOCR/ch_PP-OCRv4_rec_infer",
+                    use_angle_cls=True,
+                    lang="ch")
+    # OCR识别
+    ocr_result = paddle_ocr.ocr(image_file, cls=True)
+    # 把结果存result里
+    result = []
+    for idx in range(len(ocr_result)):
+        res = ocr_result[idx]
+        for line in res:
+            print(line[1][0])
+            result.append(line[1][0])
+    # 拼接字符串 与prompt结合 prompt是告诉模型从这里开始是OCR结果
+    result = prompt.join(result) + '.'
+    return result
+
+
 from translate import Translator
 import time
 
 query = 'what is this?short answer'
-images_file = f'images/bottom.jpg'
+image_file = f'images/bottom.jpg'
 audio_file = f'audio/whatisthis.mp3'
 
 # TODO:计时点
 SR_process_time = time.time()
-query = speech_recognition(audio_file, task="translate") + "Short answer"
+ocr_result = ocr(image_file)
+query = (speech_recognition(audio_file, task="translate")
+         + Translator(from_lang="en", to_lang="zh").translate(ocr_result)
+         + "Short answer."
+         )
 
 # TODO:计时点
 LLM_process_time = time.time()
-image, output = caption_image(images_file, query, size=(128, 128))
+image, output = caption_image(image_file, query, size=(128, 128))
 print(output)
 output_zh = Translator(from_lang="en", to_lang="zh").translate(output)
 
