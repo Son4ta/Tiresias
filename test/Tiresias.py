@@ -125,17 +125,27 @@ def ocr(image_file, prompt="OCR result:"):
     # OCR识别
     ocr_result = paddle_ocr.ocr(image_file, cls=True)
     if ocr_result[0] is None:
-        return ""
-    # 把结果存result里
+        return "", 0, 0
+
+    # 初始化存储结果和置信度变量
     result = []
+    total_confidence = 0.0
+    num_results = 0
+
+    # 遍历结果，累积置信度并构建输出字符串
     for idx in range(len(ocr_result)):
         res = ocr_result[idx]
         for line in res:
-            print(line[1][0])
             result.append(line[1][0])
-    # 拼接字符串 与prompt结合 prompt是告诉模型从这里开始是OCR结果
-    result = prompt + " ".join(result) + '.'
-    return result
+            total_confidence += line[1][1]
+            num_results += 1
+
+    # 计算平均置信度
+    average_confidence = total_confidence / num_results if num_results > 0 else 0
+
+    # 拼接字符串 与prompt结合
+    result_text = prompt + " ".join(result) + '.'
+    return result_text, num_results, average_confidence
 
 
 class Tiresias:
@@ -170,10 +180,10 @@ class Tiresias:
             raise RuntimeError("模型已经在某处被初始化，请检查")
         self.init = True
         self.model_name = "qwen"
-        self.tokenizer = AutoTokenizer.from_pretrained("model/Qwen-VL-Chat-Int4", trust_remote_code=True)
-        self.model = AutoModelForCausalLM.from_pretrained("model/Qwen-VL-Chat-Int4", device_map="cuda",
+        self.tokenizer = AutoTokenizer.from_pretrained("S:/Programming/LLaVA/model/Qwen-VL-Chat-Int4", trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained("S:/Programming/LLaVA/model/Qwen-VL-Chat-Int4", device_map="cuda",
                                                           trust_remote_code=True).eval()
-        self.model.generation_config = GenerationConfig.from_pretrained("model/Qwen-VL-Chat-Int4",
+        self.model.generation_config = GenerationConfig.from_pretrained("S:/Programming/LLaVA/model/Qwen-VL-Chat-Int4",
                                                                         trust_remote_code=True)
 
     # 统一执行接口
