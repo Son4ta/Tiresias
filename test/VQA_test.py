@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 
 import matplotlib
-import torch
 from matplotlib import pyplot as plt
 
 matplotlib.use('TkAgg')
@@ -51,7 +50,14 @@ def get_model_answer(image_path, question, model, ocr=True):
         return output, "N/A", "N/A", "N/A", end_time - process_time
 
 
-def evaluate_model_on_textvqa(json_file_path, model, output_csv_path, start_from=0, max_samples=None, ocr=True):
+def auto_name(start_from, end_of, ocr):
+    """自动根据index返回名称"""
+    name = f"./{'pure_' if ocr is False else ''}llava_{start_from}-{end_of}.csv"
+    return name
+
+
+def evaluate_model_on_textvqa(json_file_path, model, output_csv_path, start_from=0, max_samples=None, ocr=True,
+                              auto_rename=False):
     """Evaluate the model on the TextVQA dataset and save results to a CSV file."""
     # 图片保存目录
     local_image_dir = './images/train_images'
@@ -151,6 +157,9 @@ def evaluate_model_on_textvqa(json_file_path, model, output_csv_path, start_from
             index += 1
             total_questions += 1
 
+    # 修改表名
+    if auto_rename:
+        os.rename(output_csv_path, auto_name(start_from, index - 1, ocr))
     # Calculate overall and per-class accuracy
     accuracy = sum_score / total_questions
     class_accuracies = {cls: (scores['correct'] / scores['total']) * 100 for cls, scores in class_scores.items()}
@@ -195,10 +204,12 @@ def plot_accuracy(class_accuracies):
 model = Tias.Tiresias("llava")
 overall_accuracy, per_class_accuracy = evaluate_model_on_textvqa('TextVQA_0.5.1_val.json',
                                                                  model,
-                                                                 './699-2400.csv',
-                                                                 start_from=699,
-                                                                 max_samples=1701,
-                                                                 ocr=True)
+                                                                 './walawala.csv',  # pure_llava_
+                                                                 start_from=4373,
+                                                                 max_samples=627,
+                                                                 ocr=True,
+                                                                 auto_rename=True)
+
 del model
 
 print(f"Overall Accuracy: {overall_accuracy}%")
@@ -206,5 +217,5 @@ print("Per-Class Accuracy:")
 for cls, acc in per_class_accuracy.items():
     print(f"{cls}: {acc:.2f}%")
 print(per_class_accuracy)
-plot_accuracy(per_class_accuracy)
+# plot_accuracy(per_class_accuracy)
 # os.system("shutdown -s -t  60 ")

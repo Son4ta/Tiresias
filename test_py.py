@@ -5,7 +5,6 @@ from matplotlib import pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.generation import GenerationConfig
 
-
 def calculate_f1_scores(class_stats):
     f1_scores = {}
     for cls, stats in class_stats.items():

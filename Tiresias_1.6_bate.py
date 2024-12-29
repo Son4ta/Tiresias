@@ -1,3 +1,5 @@
+import os
+
 import torch
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
@@ -65,7 +67,7 @@ def speech_recognition(audio_file, task="transcribe"):
     return transcription[0]
 
 
-def text_to_speech(prompt, speaker_wav="audio/hanser.wav", language="zh-cn", output_file="output.wav"):
+def text_to_speech(prompt, speaker_wav=None, language="zh-cn", output_file="output.wav"):
     # 初始化TTS，传入模型名称
     tts = TTS(
         model_path="./model/XTTS-v2",
@@ -132,7 +134,7 @@ def ocr(image_file, prompt="OCR result:"):
             print(line[1][0])
             result.append(line[1][0])
     # 拼接字符串 与prompt结合 prompt是告诉模型从这里开始是OCR结果
-    result = prompt + " ".join(result) + '.'
+    result = prompt + ";".join(result) + '.'
     return result
 
 
@@ -240,9 +242,9 @@ class Tiresias:
 from translate import Translator
 import time
 
-query = 'It\'s April 25th, 2025. Is this still drinkable?Why?'
-query_cn = '今天是2025年4月25日，这个过期了吗？'
-image_file = f'images/coconut.jpg'
+query = 'Which station is the current subway station at? I want to go to Zhejiang University Ningbo Institute of Technology, which exit should I take?'
+query_cn = '终点站武汉的列车车次是多少？根据当前时间告诉我离出发还有多久？'
+image_file = f'images/metro2.jpg'
 audio_file = f'audio/花生.mp3'
 
 """测试翻译"""
@@ -259,28 +261,33 @@ SR_process_time = time.time()
 ocr_result = ocr(image_file)
 query = (  # speech_recognition(audio_file, task="translate")
     query
-    + Translator(from_lang="zh", to_lang="en").translate(ocr_result)
-    + "Short answer."
+    # + Translator(from_lang="zh", to_lang="en").translate(ocr_result[:500])
+    # + "Short answer."
 )
+print(query)
 query_cn = (  # speech_recognition(audio_file)
     query_cn
-    + ocr_result
-    + "Short answer."
+    # + ocr_result
+    # + "Short answer."
 )
 
 # TODO:计时点
 LLM_process_time = time.time()
 """VLM推理"""
-image, output = Tiresias.exec(image_file, query_cn)
+image, output = Tiresias.exec(image_file, query)
 print(output)
-output_zh = Translator(from_lang="en", to_lang="zh").translate(output)
+# image, output = Tiresias.exec(image_file, query_cn)
+# print(output)
+# output_zh = Translator(from_lang="en", to_lang="zh").translate(output)
 del Tiresias
 
 # TODO:计时点
 TTS_process_time = time.time()
 """字符串预处理 加句号 TTS"""
-output_zh = str_preprocess(output_zh)
-text_to_speech(output_zh, output_file="peanut.wav")
+# output_zh = str_preprocess(output_zh)
+# 使用os.path.splitext去掉文件扩展名，os.path.basename获取文件名
+# filename = os.path.splitext(os.path.basename(image_file))[0]
+# text_to_speech(output_zh, output_file=filename+".wav")
 
 end_time = time.time()
 print("初始化耗时: {:.2f}秒".format(SR_process_time - start_time))
